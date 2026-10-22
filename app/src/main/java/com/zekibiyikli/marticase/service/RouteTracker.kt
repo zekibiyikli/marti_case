@@ -27,10 +27,9 @@ class RouteTracker(
     private val observeLocationUpdates: ObserveLocationUpdatesUseCase,
     observeMarkers: ObserveMarkersUseCase,
     private val addMarker: AddMarkerUseCase,
-    private val clearMarkers: ClearMarkersUseCase
+    private val clearMarkers: ClearMarkersUseCase,
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-
     private val _isTracking = MutableStateFlow(false)
     val isTracking: StateFlow<Boolean> = _isTracking.asStateFlow()
 
