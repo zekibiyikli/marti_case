@@ -1,3 +1,27 @@
 <resources>
     <string name="app_name">MartiCase</string>
+
+    <string name="tracking">Tracking</string>
+    <string name="not_tracking">Not tracking</string>
+
+    <string name="location_permission_denied">Location permission not granted, tap to allow</string>
+    <string name="location_permission_permanently_denied">Location permission is off, tap to open settings</string>
+    <string name="location_disabled">Location is off, tap to turn it on</string>
+
+    <string name="delete_route_title">Delete route</string>
+    <string name="delete_route_description">Are you sure you want to delete your route? This action cannot be undone.</string>
+    <string name="cancel">Cancel</string>
+    <string name="reset">Reset</string>
+
+    <string name="marker_title">Marker %1$d</string>
+    <string name="marker_address">Address</string>
+    <string name="marker_location">Location</string>
+    <string name="marker_address_loading">Loading address…</string>
+    <string name="marker_address_unavailable">Address not available</string>
+
+    <string name="cd_delete">Delete</string>
+    <string name="cd_start_tracking">Start</string>
+    <string name="cd_pause_tracking">Pause</string>
+    <string name="cd_change_map_type">Change map type</string>
+    <string name="cd_my_location">Go to my location</string>
 </resources>
