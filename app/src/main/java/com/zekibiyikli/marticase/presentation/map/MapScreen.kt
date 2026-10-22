@@ -21,10 +21,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -36,6 +36,7 @@ import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.CameraMoveStartedReason
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.Marker
@@ -49,7 +50,6 @@ import com.zekibiyikli.marticase.R
 import com.zekibiyikli.marticase.presentation.map.components.MapControls
 import com.zekibiyikli.marticase.presentation.map.dialogs.MarkerDetailsBottomSheet
 import com.zekibiyikli.marticase.presentation.map.components.TrackingStatusCard
-import com.zekibiyikli.marticase.presentation.map.components.rememberMarkerIcon
 import com.zekibiyikli.marticase.presentation.permission.rememberLocationEnabledState
 import com.zekibiyikli.marticase.service.LocationTrackingService
 import com.zekibiyikli.marticase.presentation.permission.rememberLocationPermissionState
@@ -106,8 +106,23 @@ fun MapScreen(
         }
     }
 
-    // Follow the user while tracking, without overriding a zoom level they picked.
+    // Following starts with tracking and stops as soon as the user moves the map or picks a marker;
+    // the location button turns it back on.
+    var isFollowing by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isTracking) {
+        if (isTracking) isFollowing = true
+    }
+
+    LaunchedEffect(cameraPositionState) {
+        snapshotFlow { cameraPositionState.cameraMoveStartedReason }.collect { reason ->
+            if (reason == CameraMoveStartedReason.GESTURE) isFollowing = false
+        }
+    }
+
+    // Keep the user centered while following, without overriding a zoom level they picked.
     LaunchedEffect(uiState.currentLocation) {
+        if (!isTracking || !isFollowing) return@LaunchedEffect
         val point = uiState.currentLocation ?: return@LaunchedEffect
         val target = LatLng(point.latitude, point.longitude)
         val zoom = cameraPositionState.position.zoom.takeIf { it >= FollowMinZoom } ?: UserZoom
@@ -131,13 +146,16 @@ fun MapScreen(
                 myLocationButtonEnabled = false
             )
         ) {
-            val markerIcon = rememberMarkerIcon()
             uiState.markers.forEachIndexed { index, point ->
                 Marker(
                     state = rememberUpdatedMarkerState(LatLng(point.latitude, point.longitude)),
-                    icon = markerIcon,
-                    anchor = Offset(0.5f, 1f),
                     onClick = {
+                        isFollowing = false
+                        scope.launch {
+                            cameraPositionState.animate(
+                                CameraUpdateFactory.newLatLng(LatLng(point.latitude, point.longitude))
+                            )
+                        }
                         viewModel.onMarkerClick(index)
                         true
                     }
@@ -158,7 +176,12 @@ fun MapScreen(
             },
             onDeleteClick = { showDeleteSheet = true },
             onToggleMapType = viewModel::toggleMapStyle,
-            onMyLocationClick = { if (permissionGranted && locationEnabled) scope.launch { zoomToUser() } },
+            onMyLocationClick = {
+                if (permissionGranted && locationEnabled) {
+                    isFollowing = true
+                    scope.launch { zoomToUser() }
+                }
+            },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .navigationBarsPadding()
