@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
 import com.google.android.gms.location.LocationServices
+import com.zekibiyikli.marticase.domain.model.MapStyle
 import com.google.android.gms.location.Priority
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
@@ -84,7 +85,6 @@ fun MapScreen(
     ) { LocationTrackingService.start(context) }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isTracking = uiState.isTracking
-    var mapType by remember { mutableStateOf(MapType.NORMAL) }
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(Istanbul, 12f)
     }
@@ -128,7 +128,7 @@ fun MapScreen(
             cameraPositionState = cameraPositionState,
             properties = MapProperties(
                 isMyLocationEnabled = permissionGranted,
-                mapType = mapType
+                mapType = if (uiState.mapStyle == MapStyle.HYBRID) MapType.HYBRID else MapType.NORMAL
             ),
             uiSettings = MapUiSettings(
                 zoomControlsEnabled = false,
@@ -161,9 +161,7 @@ fun MapScreen(
                 }
             },
             onDeleteClick = { showDeleteSheet = true },
-            onToggleMapType = {
-                mapType = if (mapType == MapType.NORMAL) MapType.HYBRID else MapType.NORMAL
-            },
+            onToggleMapType = viewModel::toggleMapStyle,
             onMyLocationClick = { if (permissionGranted && locationEnabled) scope.launch { zoomToUser() } },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
