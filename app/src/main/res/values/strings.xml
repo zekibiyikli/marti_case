@@ -19,6 +19,11 @@
     <string name="marker_address_loading">Loading address…</string>
     <string name="marker_address_unavailable">Address not available</string>
 
+    <string name="notification_channel_name">Route tracking</string>
+    <string name="notification_title">Tracking your route</string>
+    <string name="notification_text">Location is being tracked in the background</string>
+    <string name="notification_stop">Stop</string>
+
     <string name="cd_delete">Delete</string>
     <string name="cd_start_tracking">Start</string>
     <string name="cd_pause_tracking">Pause</string>

@@ -1,6 +1,13 @@
 package com.zekibiyikli.marticase.presentation.map
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,14 +42,15 @@ import com.google.maps.android.compose.rememberUpdatedMarkerState
 import com.google.maps.android.compose.MapType
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.rememberCameraPositionState
-import com.zekibiyikli.marticase.presentation.map.components.DeleteRouteBottomSheet
+import com.zekibiyikli.marticase.presentation.map.dialogs.DeleteRouteBottomSheet
 import com.zekibiyikli.marticase.presentation.map.components.LocationWarningCard
 import com.zekibiyikli.marticase.R
 import com.zekibiyikli.marticase.presentation.map.components.MapControls
-import com.zekibiyikli.marticase.presentation.map.components.MarkerDetailsBottomSheet
+import com.zekibiyikli.marticase.presentation.map.dialogs.MarkerDetailsBottomSheet
 import com.zekibiyikli.marticase.presentation.map.components.TrackingStatusCard
 import com.zekibiyikli.marticase.presentation.map.components.rememberMarkerIcon
 import com.zekibiyikli.marticase.presentation.permission.rememberLocationEnabledState
+import com.zekibiyikli.marticase.service.LocationTrackingService
 import com.zekibiyikli.marticase.presentation.permission.rememberLocationPermissionState
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -51,6 +59,11 @@ import timber.log.Timber
 private val Istanbul = LatLng(41.0082, 28.9784)
 private const val UserZoom = 17f
 private const val FollowMinZoom = 15f
+
+private fun needsNotificationPermission(context: Context) =
+    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+        PackageManager.PERMISSION_GRANTED
 
 @SuppressLint("MissingPermission")
 @Composable
@@ -65,6 +78,10 @@ fun MapScreen(
     val locationEnabledState = rememberLocationEnabledState()
     val locationEnabled = locationEnabledState.enabled
     var showDeleteSheet by remember { mutableStateOf(false) }
+    // The service runs with or without the notification, so start it whatever the user answers.
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { LocationTrackingService.start(context) }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isTracking = uiState.isTracking
     var mapType by remember { mutableStateOf(MapType.NORMAL) }
@@ -74,9 +91,12 @@ fun MapScreen(
 
     suspend fun zoomToUser() {
         try {
-            val location = LocationServices.getFusedLocationProviderClient(context)
-                .getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
-                .await()
+            val client = LocationServices.getFusedLocationProviderClient(context)
+            // Last known fix first so the map is centered on the user right away, then refine with a fresh one.
+            client.lastLocation.await()?.let {
+                cameraPositionState.move(CameraUpdateFactory.newLatLngZoom(LatLng(it.latitude, it.longitude), UserZoom))
+            }
+            val location = client.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null).await()
             if (location != null) {
                 cameraPositionState.animate(
                     CameraUpdateFactory.newLatLngZoom(
@@ -134,7 +154,10 @@ fun MapScreen(
                 when {
                     !permissionGranted -> permissionState.request()
                     !locationEnabled -> locationEnabledState.request()
-                    else -> viewModel.toggleTracking()
+                    isTracking -> LocationTrackingService.stop(context)
+                    needsNotificationPermission(context) ->
+                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    else -> LocationTrackingService.start(context)
                 }
             },
             onDeleteClick = { showDeleteSheet = true },

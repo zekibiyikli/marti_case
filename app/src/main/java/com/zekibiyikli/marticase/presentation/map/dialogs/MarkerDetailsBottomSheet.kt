@@ -1,4 +1,4 @@
-package com.zekibiyikli.marticase.presentation.map.components
+package com.zekibiyikli.marticase.presentation.map.dialogs
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -16,6 +16,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.zekibiyikli.marticase.R
 import com.zekibiyikli.marticase.presentation.map.MarkerDetails
+import com.zekibiyikli.marticase.presentation.map.components.HideNavigationBarEffect
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)

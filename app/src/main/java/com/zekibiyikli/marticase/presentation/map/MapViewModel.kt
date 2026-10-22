@@ -3,22 +3,15 @@ package com.zekibiyikli.marticase.presentation.map
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.zekibiyikli.marticase.domain.model.LocationPoint
-import com.zekibiyikli.marticase.domain.usecase.AddMarkerUseCase
-import com.zekibiyikli.marticase.domain.usecase.ClearMarkersUseCase
 import com.zekibiyikli.marticase.domain.usecase.GetAddressUseCase
-import com.zekibiyikli.marticase.domain.usecase.ObserveLocationUpdatesUseCase
 import com.zekibiyikli.marticase.domain.usecase.ObserveMarkersUseCase
-import com.zekibiyikli.marticase.util.distanceMeters
+import com.zekibiyikli.marticase.service.RouteTracker
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import timber.log.Timber
-
-private const val MarkerDistanceMeters = 100.0
 
 data class MarkerDetails(
     val number: Int,
@@ -35,45 +28,31 @@ data class MapUiState(
 )
 
 class MapViewModel(
-    private val observeLocationUpdates: ObserveLocationUpdatesUseCase,
+    private val tracker: RouteTracker,
     private val getAddress: GetAddressUseCase,
-    observeMarkers: ObserveMarkersUseCase,
-    private val addMarker: AddMarkerUseCase,
-    private val clearMarkers: ClearMarkersUseCase
+    observeMarkers: ObserveMarkersUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MapUiState())
     val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
 
-    private var trackingJob: Job? = null
     private var addressJob: Job? = null
-
-    // Reference for the next marker while the route has none: the first location after tracking starts
-    // or the location where the route was cleared. Markers are measured from it, never dropped on it.
-    private var anchor: LocationPoint? = null
-
-    // The latest marker, updated synchronously so two quick locations cannot both pass the distance check
-    // before the database emits.
-    private var lastMarker: LocationPoint? = null
 
     init {
         viewModelScope.launch {
-            observeMarkers().collect { markers ->
-                lastMarker = markers.lastOrNull()
-                _uiState.update { it.copy(markers = markers) }
-            }
+            tracker.isTracking.collect { isTracking -> _uiState.update { it.copy(isTracking = isTracking) } }
         }
-    }
-
-    fun toggleTracking() {
-        if (_uiState.value.isTracking) stopTracking() else startTracking()
+        viewModelScope.launch {
+            tracker.currentLocation.collect { point -> _uiState.update { it.copy(currentLocation = point) } }
+        }
+        viewModelScope.launch {
+            observeMarkers().collect { markers -> _uiState.update { it.copy(markers = markers) } }
+        }
     }
 
     fun clearRoute() {
         dismissMarkerDetails()
-        anchor = _uiState.value.currentLocation
-        lastMarker = null
-        viewModelScope.launch { clearMarkers() }
+        tracker.clearRoute()
     }
 
     fun onMarkerClick(index: Int) {
@@ -93,37 +72,5 @@ class MapViewModel(
     fun dismissMarkerDetails() {
         addressJob?.cancel()
         _uiState.update { it.copy(selectedMarker = null) }
-    }
-
-    private fun startTracking() {
-        anchor = null
-        _uiState.update { it.copy(isTracking = true) }
-        trackingJob = viewModelScope.launch {
-            observeLocationUpdates()
-                .catch { e ->
-                    Timber.e(e, "Location tracking failed")
-                    _uiState.update { it.copy(isTracking = false) }
-                }
-                .collect(::onLocation)
-        }
-    }
-
-    private fun stopTracking() {
-        trackingJob?.cancel()
-        trackingJob = null
-        _uiState.update { it.copy(isTracking = false) }
-    }
-
-    private fun onLocation(point: LocationPoint) {
-        val reference = lastMarker ?: anchor
-        if (reference == null) anchor = point
-        val shouldAddMarker = reference != null && distanceMeters(reference, point) >= MarkerDistanceMeters
-        Timber.d("Location %s, distance from last marker: %s m, marker added: %s",
-            point, reference?.let { distanceMeters(it, point).toInt() }, shouldAddMarker)
-        if (shouldAddMarker) {
-            lastMarker = point
-            viewModelScope.launch { addMarker(point) }
-        }
-        _uiState.update { it.copy(currentLocation = point) }
     }
 }
