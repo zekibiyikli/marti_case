@@ -2,12 +2,12 @@ package com.zekibiyikli.marticase.presentation.map
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.zekibiyikli.marticase.domain.model.LocationPoint
 import com.zekibiyikli.marticase.domain.model.MapStyle
 import com.zekibiyikli.marticase.domain.usecase.GetAddressUseCase
 import com.zekibiyikli.marticase.domain.usecase.ObserveMapStyleUseCase
 import com.zekibiyikli.marticase.domain.usecase.ObserveMarkersUseCase
 import com.zekibiyikli.marticase.domain.usecase.SetMapStyleUseCase
+import com.zekibiyikli.marticase.presentation.map.model.MarkerDetails
 import com.zekibiyikli.marticase.service.RouteTracker
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,21 +15,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
-data class MarkerDetails(
-    val number: Int,
-    val point: LocationPoint,
-    val address: String? = null,
-    val isLoadingAddress: Boolean = true
-)
-
-data class MapUiState(
-    val isTracking: Boolean = false,
-    val markers: List<LocationPoint> = emptyList(),
-    val currentLocation: LocationPoint? = null,
-    val selectedMarker: MarkerDetails? = null,
-    val mapStyle: MapStyle = MapStyle.NORMAL
-)
 
 class MapViewModel(
     private val tracker: RouteTracker,

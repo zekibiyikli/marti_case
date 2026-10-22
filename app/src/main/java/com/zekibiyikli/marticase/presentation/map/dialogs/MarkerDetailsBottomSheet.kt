@@ -15,8 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.zekibiyikli.marticase.R
-import com.zekibiyikli.marticase.presentation.map.MarkerDetails
 import com.zekibiyikli.marticase.presentation.map.components.HideNavigationBarEffect
+import com.zekibiyikli.marticase.presentation.map.model.MarkerDetails
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)

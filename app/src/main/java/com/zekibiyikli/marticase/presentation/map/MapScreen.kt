@@ -57,14 +57,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import timber.log.Timber
 
-private val Istanbul = LatLng(41.0082, 28.9784)
+private val LocationIstanbul = LatLng(41.0082, 28.9784)
+private const val Zoom = 12f
 private const val UserZoom = 17f
 private const val FollowMinZoom = 15f
-
-private fun needsNotificationPermission(context: Context) =
-    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
-        PackageManager.PERMISSION_GRANTED
 
 @SuppressLint("MissingPermission")
 @Composable
@@ -86,7 +82,7 @@ fun MapScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isTracking = uiState.isTracking
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(Istanbul, 12f)
+        position = CameraPosition.fromLatLngZoom(LocationIstanbul, Zoom)
     }
 
     suspend fun zoomToUser() {
@@ -211,3 +207,8 @@ fun MapScreen(
         )
     }
 }
+
+private fun needsNotificationPermission(context: Context) =
+    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
