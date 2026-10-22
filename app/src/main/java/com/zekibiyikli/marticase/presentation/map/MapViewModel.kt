@@ -3,8 +3,11 @@ package com.zekibiyikli.marticase.presentation.map
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.zekibiyikli.marticase.domain.model.LocationPoint
+import com.zekibiyikli.marticase.domain.usecase.AddMarkerUseCase
+import com.zekibiyikli.marticase.domain.usecase.ClearMarkersUseCase
 import com.zekibiyikli.marticase.domain.usecase.GetAddressUseCase
 import com.zekibiyikli.marticase.domain.usecase.ObserveLocationUpdatesUseCase
+import com.zekibiyikli.marticase.domain.usecase.ObserveMarkersUseCase
 import com.zekibiyikli.marticase.util.distanceMeters
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,7 +36,10 @@ data class MapUiState(
 
 class MapViewModel(
     private val observeLocationUpdates: ObserveLocationUpdatesUseCase,
-    private val getAddress: GetAddressUseCase
+    private val getAddress: GetAddressUseCase,
+    observeMarkers: ObserveMarkersUseCase,
+    private val addMarker: AddMarkerUseCase,
+    private val clearMarkers: ClearMarkersUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MapUiState())
@@ -46,6 +52,19 @@ class MapViewModel(
     // or the location where the route was cleared. Markers are measured from it, never dropped on it.
     private var anchor: LocationPoint? = null
 
+    // The latest marker, updated synchronously so two quick locations cannot both pass the distance check
+    // before the database emits.
+    private var lastMarker: LocationPoint? = null
+
+    init {
+        viewModelScope.launch {
+            observeMarkers().collect { markers ->
+                lastMarker = markers.lastOrNull()
+                _uiState.update { it.copy(markers = markers) }
+            }
+        }
+    }
+
     fun toggleTracking() {
         if (_uiState.value.isTracking) stopTracking() else startTracking()
     }
@@ -53,7 +72,8 @@ class MapViewModel(
     fun clearRoute() {
         dismissMarkerDetails()
         anchor = _uiState.value.currentLocation
-        _uiState.update { it.copy(markers = emptyList()) }
+        lastMarker = null
+        viewModelScope.launch { clearMarkers() }
     }
 
     fun onMarkerClick(index: Int) {
@@ -95,16 +115,15 @@ class MapViewModel(
     }
 
     private fun onLocation(point: LocationPoint) {
-        _uiState.update { state ->
-            val last = state.markers.lastOrNull() ?: anchor
-            if (last == null) anchor = point
-            val addMarker = last != null && distanceMeters(last, point) >= MarkerDistanceMeters
-            Timber.d("Location %s, distance from last marker: %s m, marker added: %s",
-                point, last?.let { distanceMeters(it, point).toInt() }, addMarker)
-            state.copy(
-                currentLocation = point,
-                markers = if (addMarker) state.markers + point else state.markers
-            )
+        val reference = lastMarker ?: anchor
+        if (reference == null) anchor = point
+        val shouldAddMarker = reference != null && distanceMeters(reference, point) >= MarkerDistanceMeters
+        Timber.d("Location %s, distance from last marker: %s m, marker added: %s",
+            point, reference?.let { distanceMeters(it, point).toInt() }, shouldAddMarker)
+        if (shouldAddMarker) {
+            lastMarker = point
+            viewModelScope.launch { addMarker(point) }
         }
+        _uiState.update { it.copy(currentLocation = point) }
     }
 }
