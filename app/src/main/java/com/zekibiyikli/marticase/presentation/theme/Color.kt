@@ -1,4 +1,4 @@
-package com.zekibiyikli.marticase.ui.theme
+package com.zekibiyikli.marticase.presentation.theme
 
 import androidx.compose.ui.graphics.Color
 

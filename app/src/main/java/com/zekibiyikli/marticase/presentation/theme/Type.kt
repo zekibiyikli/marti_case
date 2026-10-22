@@ -1,4 +1,4 @@
-package com.zekibiyikli.marticase.ui.theme
+package com.zekibiyikli.marticase.presentation.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
