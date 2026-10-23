@@ -20,6 +20,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
+import timber.log.Timber
 
 private const val ChannelId = "tracking"
 private const val NotificationId = 1
@@ -51,23 +52,31 @@ class LocationTrackingService : Service() {
             return START_NOT_STICKY
         }
 
-        ServiceCompat.startForeground(
-            this,
-            NotificationId,
-            buildNotification(),
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
-        )
+        try {
+            ServiceCompat.startForeground(
+                this,
+                NotificationId,
+                buildNotification(),
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION
+            )
+        } catch (e: RuntimeException) {
+            // After a system restart in the background the OS may refuse a location foreground service.
+            Timber.e(e, "Could not start the foreground service")
+            stopSelf()
+            return START_NOT_STICKY
+        }
         tracker.start()
         // The tracker also stops by itself (e.g. location failure): shut the service down with it.
         serviceScope.launch {
             tracker.isTracking.first { !it }
             stopSelf()
         }
-        return START_NOT_STICKY
+        // Ask the system to bring the service back if it kills the process while tracking.
+        return START_STICKY
     }
 
     override fun onDestroy() {
-        tracker.stop()
+        tracker.stop(forget = false)
         serviceScope.cancel()
         super.onDestroy()
     }

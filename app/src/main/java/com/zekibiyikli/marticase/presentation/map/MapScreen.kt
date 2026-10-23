@@ -20,6 +20,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
@@ -53,6 +54,7 @@ import com.zekibiyikli.marticase.presentation.map.components.TrackingStatusCard
 import com.zekibiyikli.marticase.presentation.permission.rememberLocationEnabledState
 import com.zekibiyikli.marticase.service.LocationTrackingService
 import com.zekibiyikli.marticase.presentation.permission.rememberLocationPermissionState
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import timber.log.Timber
@@ -61,6 +63,7 @@ private val LocationIstanbul = LatLng(41.0082, 28.9784)
 private const val Zoom = 12f
 private const val UserZoom = 17f
 private const val FollowMinZoom = 15f
+private const val MarkerCenterDurationMs = 400
 
 @SuppressLint("MissingPermission")
 @Composable
@@ -109,6 +112,7 @@ fun MapScreen(
     // Following starts with tracking and stops as soon as the user moves the map or picks a marker;
     // the location button turns it back on.
     var isFollowing by remember { mutableStateOf(false) }
+    var markerJob by remember { mutableStateOf<Job?>(null) }
 
     LaunchedEffect(isTracking) {
         if (isTracking) isFollowing = true
@@ -133,6 +137,14 @@ fun MapScreen(
         if (permissionGranted && locationEnabled) zoomToUser()
     }
 
+    // Tracking that was on when the process died is resumed once, now that the app is in the foreground.
+    var resumeChecked by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(permissionGranted, locationEnabled) {
+        if (resumeChecked || !permissionGranted || !locationEnabled) return@LaunchedEffect
+        resumeChecked = true
+        if (viewModel.wasTrackingActive()) LocationTrackingService.start(context)
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
@@ -151,12 +163,15 @@ fun MapScreen(
                     state = rememberUpdatedMarkerState(LatLng(point.latitude, point.longitude)),
                     onClick = {
                         isFollowing = false
-                        scope.launch {
+                        markerJob?.cancel()
+                        // Open the sheet only after the camera arrives, so building it does not stall the animation.
+                        markerJob = scope.launch {
                             cameraPositionState.animate(
-                                CameraUpdateFactory.newLatLng(LatLng(point.latitude, point.longitude))
+                                CameraUpdateFactory.newLatLng(LatLng(point.latitude, point.longitude)),
+                                MarkerCenterDurationMs
                             )
+                            viewModel.onMarkerClick(index)
                         }
-                        viewModel.onMarkerClick(index)
                         true
                     }
                 )

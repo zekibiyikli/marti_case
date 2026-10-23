@@ -2,11 +2,14 @@ package com.zekibiyikli.marticase.service
 
 import com.zekibiyikli.marticase.domain.model.LocationPoint
 import com.zekibiyikli.marticase.domain.repository.LocationRepository
+import com.zekibiyikli.marticase.domain.model.MapStyle
 import com.zekibiyikli.marticase.domain.repository.MarkerRepository
+import com.zekibiyikli.marticase.domain.repository.SettingsRepository
 import com.zekibiyikli.marticase.domain.usecase.AddMarkerUseCase
 import com.zekibiyikli.marticase.domain.usecase.ClearMarkersUseCase
 import com.zekibiyikli.marticase.domain.usecase.ObserveLocationUpdatesUseCase
 import com.zekibiyikli.marticase.domain.usecase.ObserveMarkersUseCase
+import com.zekibiyikli.marticase.domain.usecase.SetTrackingActiveUseCase
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -36,6 +39,16 @@ private class FakeMarkerRepository : MarkerRepository {
     }
 }
 
+private class FakeSettingsRepository : SettingsRepository {
+    var trackingActive = false
+    override fun observeMapStyle(): Flow<MapStyle> = MutableStateFlow(MapStyle.NORMAL)
+    override suspend fun setMapStyle(style: MapStyle) = Unit
+    override suspend fun isTrackingActive(): Boolean = trackingActive
+    override suspend fun setTrackingActive(active: Boolean) {
+        trackingActive = active
+    }
+}
+
 // Latitude offsets from the start point, in meters: 0.0005 deg is ~56 m, 0.00091 deg is ~101 m.
 private const val START_LAT = 41.0
 private const val LON = 29.0
@@ -49,12 +62,14 @@ class RouteTrackerTest {
 
     private val locationRepository = FakeLocationRepository()
     private val markerRepository = FakeMarkerRepository()
+    private val settingsRepository = FakeSettingsRepository()
 
     private fun TestScope.createTracker() = RouteTracker(
         ObserveLocationUpdatesUseCase(locationRepository),
         ObserveMarkersUseCase(markerRepository),
         AddMarkerUseCase(markerRepository),
         ClearMarkersUseCase(markerRepository),
+        SetTrackingActiveUseCase(settingsRepository),
         scope = backgroundScope
     )
 
@@ -134,5 +149,27 @@ class RouteTrackerTest {
 
         tracker.stop()
         assertFalse(tracker.isTracking.value)
+    }
+
+    @Test
+    fun start_remembersThatTrackingIsActive_andStopForgetsIt() = runTest(UnconfinedTestDispatcher()) {
+        val tracker = createTracker()
+
+        tracker.start()
+        assertTrue(settingsRepository.trackingActive)
+
+        tracker.stop()
+        assertFalse(settingsRepository.trackingActive)
+    }
+
+    @Test
+    fun stopWithoutForget_keepsTrackingMarkedActiveForResume() = runTest(UnconfinedTestDispatcher()) {
+        val tracker = createTracker()
+        tracker.start()
+
+        tracker.stop(forget = false)
+
+        assertFalse(tracker.isTracking.value)
+        assertTrue(settingsRepository.trackingActive)
     }
 }

@@ -5,6 +5,7 @@ import com.zekibiyikli.marticase.domain.usecase.AddMarkerUseCase
 import com.zekibiyikli.marticase.domain.usecase.ClearMarkersUseCase
 import com.zekibiyikli.marticase.domain.usecase.ObserveLocationUpdatesUseCase
 import com.zekibiyikli.marticase.domain.usecase.ObserveMarkersUseCase
+import com.zekibiyikli.marticase.domain.usecase.SetTrackingActiveUseCase
 import com.zekibiyikli.marticase.util.distanceMeters
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,6 +29,7 @@ class RouteTracker(
     observeMarkers: ObserveMarkersUseCase,
     private val addMarker: AddMarkerUseCase,
     private val clearMarkers: ClearMarkersUseCase,
+    private val setTrackingActive: SetTrackingActiveUseCase,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 ) {
     private val _isTracking = MutableStateFlow(false)
@@ -58,9 +60,13 @@ class RouteTracker(
         if (trackingJob != null) return
         anchor = null
         _isTracking.value = true
+        scope.launch { setTrackingActive(true) }
         trackingJob = scope.launch {
             observeLocationUpdates()
-                .catch { e -> Timber.e(e, "Location tracking failed") }
+                .catch { e ->
+                    Timber.e(e, "Location tracking failed")
+                    setTrackingActive(false)
+                }
                 .collect(::onLocation)
         }.also { job ->
             job.invokeOnCompletion {
@@ -70,7 +76,12 @@ class RouteTracker(
         }
     }
 
-    fun stop() {
+    /**
+     * Stops tracking. With [forget] the tracker also stops asking to be resumed; pass false when the
+     * system tears the service down, so tracking can pick up again the next time the app opens.
+     */
+    fun stop(forget: Boolean = true) {
+        if (forget) scope.launch { setTrackingActive(false) }
         trackingJob?.cancel()
     }
 

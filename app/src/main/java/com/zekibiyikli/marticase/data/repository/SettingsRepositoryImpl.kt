@@ -9,4 +9,8 @@ class SettingsRepositoryImpl(private val dataStore: SettingsDataStore) : Setting
     override fun observeMapStyle(): Flow<MapStyle> = dataStore.mapStyle
 
     override suspend fun setMapStyle(style: MapStyle) = dataStore.setMapStyle(style)
+
+    override suspend fun isTrackingActive(): Boolean = dataStore.isTrackingActive()
+
+    override suspend fun setTrackingActive(active: Boolean) = dataStore.setTrackingActive(active)
 }

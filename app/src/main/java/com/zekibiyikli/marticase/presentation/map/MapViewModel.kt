@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.zekibiyikli.marticase.domain.model.MapStyle
 import com.zekibiyikli.marticase.domain.usecase.GetAddressUseCase
+import com.zekibiyikli.marticase.domain.usecase.GetTrackingActiveUseCase
 import com.zekibiyikli.marticase.domain.usecase.ObserveMapStyleUseCase
 import com.zekibiyikli.marticase.domain.usecase.ObserveMarkersUseCase
 import com.zekibiyikli.marticase.domain.usecase.SetMapStyleUseCase
@@ -21,7 +22,8 @@ class MapViewModel(
     private val getAddress: GetAddressUseCase,
     observeMarkers: ObserveMarkersUseCase,
     observeMapStyle: ObserveMapStyleUseCase,
-    private val setMapStyle: SetMapStyleUseCase
+    private val setMapStyle: SetMapStyleUseCase,
+    private val getTrackingActive: GetTrackingActiveUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MapUiState())
@@ -43,6 +45,9 @@ class MapViewModel(
             observeMapStyle().collect { style -> _uiState.update { it.copy(mapStyle = style) } }
         }
     }
+
+    /** True if tracking was on when the app last ran (e.g. the process was killed while tracking). */
+    suspend fun wasTrackingActive(): Boolean = getTrackingActive()
 
     fun toggleMapStyle() {
         val next = if (_uiState.value.mapStyle == MapStyle.NORMAL) MapStyle.HYBRID else MapStyle.NORMAL

@@ -10,6 +10,7 @@ Kullanıcının konumunu Google Harita üzerinde gösteren ve takip sırasında 
 - Konum izni ve konum servisi kapalıysa ekranın üstünde uyarı kartı gösterir; karta dokununca uygulama içi izin / "konumu aç" diyaloğu açılır (izin kalıcı reddedilmişse ayarlara yönlendirir)
 - Başlat / duraklat ile takip: takip sırasında her 100 m'de bir marker eklenir ve harita kullanıcıyı izler
 - Takip foreground service ile çalışır, uygulama arka plandayken de sürer (bildirimden durdurulabilir)
+- Sistem takibi sonlandırırsa (ör. uygulama süreci öldürülürse) servis yeniden başlatılmayı dener; yine de başlamazsa uygulama tekrar açıldığında takip kaldığı yerden devam eder
 - Markerlar Room'da saklanır, uygulama kapanıp açılınca aynı yerlerinde kalır
 - Markera dokununca başlık, adres (ters coğrafi kodlama) ve koordinatları gösteren bottom sheet açılır
 - Rotayı silmeden önce onay bottom sheet'i
@@ -38,7 +39,7 @@ Kullanıcının konumunu Google Harita üzerinde gösteren ve takip sırasında 
 | Ayarlar | Preferences DataStore |
 | Loglama | Timber |
 
-`minSdk 24`, `compileSdk / targetSdk 37`. Bağımlılık sürümleri `gradle/libs.versions.toml` içinde.
+`minSdk 29`, `compileSdk / targetSdk 37`. Bağımlılık sürümleri `gradle/libs.versions.toml` içinde.
 
 ## Mimari
 

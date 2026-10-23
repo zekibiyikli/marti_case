@@ -13,7 +13,9 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 
+// The distance filter lets the GPS rest while the user stands still; markers are 100 m apart anyway.
 private const val UpdateIntervalMs = 2_000L
+private const val MinUpdateDistanceMeters = 10f
 
 class LocationDataSource(context: Context) {
 
@@ -22,6 +24,7 @@ class LocationDataSource(context: Context) {
     @SuppressLint("MissingPermission")
     fun locationUpdates(): Flow<LocationPoint> = callbackFlow {
         val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, UpdateIntervalMs)
+            .setMinUpdateDistanceMeters(MinUpdateDistanceMeters)
             .build()
         val callback = object : LocationCallback() {
             override fun onLocationResult(result: LocationResult) {
