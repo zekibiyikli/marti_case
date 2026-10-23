@@ -81,4 +81,40 @@ Gereksinimler: Android Studio (AGP 9 destekli sürüm), JDK 17, Maps SDK for And
 
 ## Testler
 
-Birim testler mesafe hesabını (`DistanceCalculatorTest`) ve `RouteTracker`'ın marker kuralını (`RouteTrackerTest`) kapsar. UI ve servis için otomatik test yok.
+### Birim testler
+
+```
+./gradlew :app:testDebugUnitTest
+```
+
+- `DistanceCalculatorTest`: mesafe hesabı (aynı nokta, bilinen mesafeler, simetri)
+- `RouteTrackerTest`: ilk konumun sadece referans olması, 100 m'den kısa/uzun adımlar, sonraki markerın son markerdan ölçülmesi, rota silme, takip başlat/durdur ve takibin hatırlanması
+
+UI ve servis için otomatik test yok; bu kısımlar aşağıdaki gibi elle test edilir.
+
+### Emülatörde test (GPX rotası ile)
+
+Gerçekten yürümeden takibi tekrar edilebilir şekilde denemek için `docs/marti_test_rota.gpx` dosyası kullanılabilir. Rota 3 saniye arayla 11 noktadan oluşur.
+
+1. Google Play destekli bir emülatör başlat ve uygulamayı çalıştır (konum iznini ver, emülatörde konumu aç).
+2. Emülatör penceresindeki `...` (Extended controls) → **Location** → **Routes** sekmesinde **Load GPX/KML** ile `docs/marti_test_rota.gpx` dosyasını seç.
+3. Uygulamada **play** butonuna bas (takip başlar), ardından emülatörde rotayı oynat (**Play route**; hızı artırabilirsin).
+4. Beklenen sonuç, toplam **7 marker**:
+   - İlk nokta sadece referanstır, marker eklenmez.
+   - Küçük (30 m) adımlar marker eklemez; toplam 120 m'ye ulaşınca ilk marker eklenir.
+   - Sonraki her ~100 m'lik adım (kuzeye ve doğuya) bir marker ekler.
+
+### Elle test senaryoları
+
+| Senaryo | Beklenen |
+|---|---|
+| İzin yokken uygulamayı aç | Üstte "Konum izni verilmedi" kartı çıkar; karta dokununca sistem izin diyaloğu açılır |
+| İzin verilmiş, konum kapalı | "Konum kapalı" kartı çıkar; dokununca uygulama içi "konumu aç" diyaloğu açılır |
+| Play'e bas | Durum kartı yeşil "Tracking" olur, foreground service bildirimi görünür |
+| Takipte haritayı kaydır | Kamera kullanıcıyı izlemeyi bırakır; konum butonuna basınca tekrar izler |
+| Markera dokun | Kamera markerı ortalar, ardından başlık, adres ve koordinatlar bottom sheet'te açılır |
+| Pause'a bas | Kart kırmızı "Not tracking" olur, bildirim kalkar |
+| Uygulamayı kapatıp aç | Markerlar aynı yerlerinde kalır |
+| Takipteyken uygulamayı arka plana al | Takip ve marker ekleme devam eder (bildirimden durdurulabilir) |
+| Çöp kutusuna bas → **Reset** | Onay bottom sheet'i açılır; onaylayınca tüm markerlar silinir |
+| Harita ikonuna bas | Harita türü normal ↔ hybrid arasında değişir ve uygulama yeniden açılınca korunur |

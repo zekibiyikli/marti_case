@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="marti-case-test" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>Marti Case Test Rota</name>
+    <desc>Baslangic: 41.002235, 28.814488. Noktalar 3 saniye arayla. Kucuk adimlar (30 m) marker eklememeli, buyuk adimlar (~130 m) eklemeli.</desc>
+  </metadata>
+  <trk>
+    <name>Test Rota</name>
+    <trkseg>
+      <!-- Baslangic: ilk nokta, ilk marker -->
+      <trkpt lat="41.002235" lon="28.814488"><time>2026-10-22T10:00:00Z</time></trkpt>
+      <!-- 30 m adimlar: marker EKLENMEMELI (toplam 90 m) -->
+      <trkpt lat="41.002504" lon="28.814488"><time>2026-10-22T10:00:03Z</time></trkpt>
+      <trkpt lat="41.002774" lon="28.814488"><time>2026-10-22T10:00:06Z</time></trkpt>
+      <trkpt lat="41.003043" lon="28.814488"><time>2026-10-22T10:00:09Z</time></trkpt>
+      <!-- 120 m (son marker'a gore): marker EKLENMELI -->
+      <trkpt lat="41.003313" lon="28.814488"><time>2026-10-22T10:00:12Z</time></trkpt>
+      <!-- ~130 m adimlar kuzeye: her biri marker EKLEMELI -->
+      <trkpt lat="41.004481" lon="28.814488"><time>2026-10-22T10:00:15Z</time></trkpt>
+      <trkpt lat="41.005649" lon="28.814488"><time>2026-10-22T10:00:18Z</time></trkpt>
+      <trkpt lat="41.006816" lon="28.814488"><time>2026-10-22T10:00:21Z</time></trkpt>
+      <!-- ~130 m adimlar doguya: her biri marker EKLEMELI -->
+      <trkpt lat="41.006816" lon="28.816035"><time>2026-10-22T10:00:24Z</time></trkpt>
+      <trkpt lat="41.006816" lon="28.817583"><time>2026-10-22T10:00:27Z</time></trkpt>
+      <trkpt lat="41.006816" lon="28.819130"><time>2026-10-22T10:00:30Z</time></trkpt>
+    </trkseg>
+  </trk>
+</gpx>
