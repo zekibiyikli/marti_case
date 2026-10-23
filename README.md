@@ -40,13 +40,22 @@ Kullanıcının konumunu Google Harita üzerinde gösteren ve takip sırasında 
 | UI | Jetpack Compose, Material 3 |
 | Harita | Google Maps SDK, maps-compose |
 | Konum | Fused Location Provider (Play Services) |
+| Arka plan | Foreground service (`location` tipi) |
 | DI | Koin |
+| Mimari | MVVM, Clean Architecture, Use Case'ler |
 | Asenkron | Kotlin Coroutines, Flow |
 | Veritabanı | Room (KSP) |
 | Ayarlar | Preferences DataStore |
 | Loglama | Timber |
 
 `minSdk 29`, `compileSdk / targetSdk 37`. Bağımlılık sürümleri `gradle/libs.versions.toml` içinde.
+
+**Trade-off'lar**
+
+- **Koin (Hilt yerine):** Küçük, tek modüllü projede daha sade ve kod üretimi gerektirmiyor; karşılığında bağımlılık hataları derleme zamanında değil çalışma zamanında ortaya çıkıyor.
+- **MVVM + tek `UiState` (MVI yerine):** Az sayıda eylem için MVI'ın Intent/Reducer katmanları gereksiz kod olurdu (proje tam MVI değil, tek yönlü bir `UiState` kullanıyor); karşılığında durum değişiklikleri MVI kadar izlenebilir değil.
+- **Foreground service (WorkManager yerine):** Sürekli konum takibi için gerekli, WorkManager periyodik işleri en az 15 dakikada bir çalıştırıyor; karşılığında kalıcı bildirim ve daha fazla pil tüketimi var.
+- **Google Maps / maps-compose (OpenStreetMap yerine):** Compose entegrasyonu olgun ve cihazda iyi çalışıyor; karşılığında API key ve kota/faturalandırma gerekiyor.
 
 ## Mimari
 

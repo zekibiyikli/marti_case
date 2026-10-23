@@ -60,3 +60,4 @@ Location request (`LocationDataSource`): high accuracy, 2 s interval, 10 m minim
 - Hiding a sheet with an animation: `sheetState.hide()` first, then call the callback (see `DeleteRouteBottomSheet`).
 - Map defaults (initial position, zoom levels) are private constants at the top of `MapScreen.kt`.
 - Markers use Google Maps' default red pin (no custom icon).
+- Splash screen uses the AndroidX SplashScreen API (no separate screen): `Theme.MartiCase.Splash` (green `splash_background`, `ic_splash` wrapping `drawable-nodpi/motorcycle.png` in a safe-area inset) is the launcher activity theme, `installSplashScreen()` runs in `MainActivity.onCreate` and the theme switches to `Theme.MartiCase` afterwards.

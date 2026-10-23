@@ -2,4 +2,10 @@
 <resources>
 
     <style name="Theme.MartiCase" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <style name="Theme.MartiCase.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash</item>
+        <item name="postSplashScreenTheme">@style/Theme.MartiCase</item>
+    </style>
 </resources>
