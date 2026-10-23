@@ -21,6 +21,7 @@ import com.zekibiyikli.marticase.R
 @Composable
 fun MapControls(
     isTracking: Boolean,
+    canStartTracking: Boolean,
     onToggleTracking: () -> Unit,
     onDeleteClick: () -> Unit,
     onToggleMapType: () -> Unit,
@@ -41,7 +42,9 @@ fun MapControls(
             ControlButton(
                 icon = if (isTracking) R.drawable.ic_pause else R.drawable.ic_play,
                 contentDescription = if (isTracking) R.string.cd_pause_tracking else R.string.cd_start_tracking,
-                onClick = onToggleTracking
+                onClick = onToggleTracking,
+                // Pausing is always possible; starting needs permission, location and enough battery.
+                enabled = isTracking || canStartTracking
             )
         }
     }
@@ -62,13 +65,14 @@ private fun ControlPill(content: @Composable () -> Unit) {
 private fun ControlButton(
     @DrawableRes icon: Int,
     @StringRes contentDescription: Int,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    enabled: Boolean = true
 ) {
-    IconButton(onClick = onClick) {
+    IconButton(onClick = onClick, enabled = enabled) {
         Icon(
             painter = painterResource(icon),
             contentDescription = stringResource(contentDescription),
-            tint = Color.White
+            tint = if (enabled) Color.White else Color.White.copy(alpha = 0.4f)
         )
     }
 }

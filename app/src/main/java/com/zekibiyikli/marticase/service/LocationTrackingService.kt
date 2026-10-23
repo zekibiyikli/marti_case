@@ -4,15 +4,19 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.ServiceInfo
+import android.os.BatteryManager
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import com.zekibiyikli.marticase.MainActivity
 import com.zekibiyikli.marticase.R
+import com.zekibiyikli.marticase.util.isBatteryLow
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -23,7 +27,10 @@ import org.koin.android.ext.android.inject
 import timber.log.Timber
 
 private const val ChannelId = "tracking"
+private const val BatteryChannelId = "battery"
 private const val NotificationId = 1
+private const val BatteryNotificationId = 2
+
 private const val ActionStart = "com.zekibiyikli.marticase.action.START_TRACKING"
 private const val ActionStop = "com.zekibiyikli.marticase.action.STOP_TRACKING"
 
@@ -32,6 +39,18 @@ class LocationTrackingService : Service() {
 
     private val tracker: RouteTracker by inject()
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+
+    private var batteryReceiverRegistered = false
+    private val batteryReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val low = isBatteryLow(
+                level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1),
+                scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1),
+                plugged = intent.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0)
+            )
+            if (low) pauseForLowBattery()
+        }
+    }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -42,7 +61,15 @@ class LocationTrackingService : Service() {
             getString(R.string.notification_channel_name),
             NotificationManager.IMPORTANCE_LOW
         )
-        getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+        val batteryChannel = NotificationChannel(
+            BatteryChannelId,
+            getString(R.string.notification_channel_battery),
+            NotificationManager.IMPORTANCE_DEFAULT
+        )
+        getSystemService(NotificationManager::class.java).apply {
+            createNotificationChannel(channel)
+            createNotificationChannel(batteryChannel)
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -66,6 +93,7 @@ class LocationTrackingService : Service() {
             return START_NOT_STICKY
         }
         tracker.start()
+        registerBatteryReceiver()
         // The tracker also stops by itself (e.g. location failure): shut the service down with it.
         serviceScope.launch {
             tracker.isTracking.first { !it }
@@ -76,9 +104,42 @@ class LocationTrackingService : Service() {
     }
 
     override fun onDestroy() {
+        if (batteryReceiverRegistered) unregisterReceiver(batteryReceiver)
         tracker.stop(forget = false)
         serviceScope.cancel()
         super.onDestroy()
+    }
+
+    // The battery broadcast is sticky: registering delivers the current level right away.
+    private fun registerBatteryReceiver() {
+        if (batteryReceiverRegistered) return
+        ContextCompat.registerReceiver(
+            this,
+            batteryReceiver,
+            IntentFilter(Intent.ACTION_BATTERY_CHANGED),
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
+        batteryReceiverRegistered = true
+    }
+
+    private fun pauseForLowBattery() {
+        tracker.stop()
+        val notification = NotificationCompat.Builder(this, BatteryChannelId)
+            .setSmallIcon(R.drawable.ic_near_me)
+            .setContentTitle(getString(R.string.battery_paused_title))
+            .setContentText(getString(R.string.battery_paused_text))
+            .setAutoCancel(true)
+            .setContentIntent(
+                PendingIntent.getActivity(
+                    this,
+                    2,
+                    Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
+                    PendingIntent.FLAG_IMMUTABLE
+                )
+            )
+            .build()
+        getSystemService(NotificationManager::class.java).notify(BatteryNotificationId, notification)
+        stopSelf()
     }
 
     private fun buildNotification() = NotificationCompat.Builder(this, ChannelId)

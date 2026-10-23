@@ -20,6 +20,10 @@
     <string name="marker_address_unavailable">Address not available</string>
 
     <string name="notification_channel_name">Route tracking</string>
+    <string name="notification_channel_battery">Battery alerts</string>
+    <string name="battery_paused_title">Tracking paused</string>
+    <string name="battery_paused_text">Battery is low, so tracking was paused to save power.</string>
+    <string name="battery_low_card">Battery is low, tracking is unavailable</string>
     <string name="notification_title">Tracking your route</string>
     <string name="notification_text">Location is being tracked in the background</string>
     <string name="notification_stop">Stop</string>

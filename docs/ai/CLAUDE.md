@@ -48,6 +48,8 @@ Marker rule in `RouteTracker`: the first location after start is only a referenc
 
 Surviving process death: `RouteTracker.start()` persists a "tracking active" flag in DataStore; `stop()` clears it (`stop(forget = false)`, used when the system destroys the service, keeps it). On a sticky restart the service tries to resume, but a background-restarted location foreground service may be refused or get no location, so `MapScreen` also checks the flag once per launch (once permission and location are available) and restarts the service if tracking was active.
 
+Low battery: `isBatteryLow` (`util/BatteryLevel.kt`, below 10% and not charging) is used in two places. `rememberBatteryLow()` (`presentation/battery/LowBattery.kt`) follows the sticky `ACTION_BATTERY_CHANGED` broadcast live; while it is true `MapScreen` shows an info card and disables the play button (the button is enabled only with permission granted, location on and battery fine; pausing is always possible). `LocationTrackingService` listens to the same broadcast while tracking and, when the battery turns low, stops the tracker (clearing the resume flag), posts a "tracking paused" notification on a separate channel and stops itself.
+
 Location request (`LocationDataSource`): high accuracy, 2 s interval, 10 m minimum update distance (lets the GPS rest while the user is still; markers are 100 m apart anyway).
 
 ### Compose/Maps specifics

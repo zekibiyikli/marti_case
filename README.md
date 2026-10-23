@@ -11,10 +11,17 @@ Kullanıcının konumunu Google Harita üzerinde gösteren ve takip sırasında 
 - Başlat / duraklat ile takip: takip sırasında her 100 m'de bir marker eklenir ve harita kullanıcıyı izler
 - Takip foreground service ile çalışır, uygulama arka plandayken de sürer (bildirimden durdurulabilir)
 - Sistem takibi sonlandırırsa (ör. uygulama süreci öldürülürse) servis yeniden başlatılmayı dener; yine de başlamazsa uygulama tekrar açıldığında takip kaldığı yerden devam eder
+- Pil %10'un altındaysa (şarj olmuyorsa) ekranın üstünde uyarı kartı görünür ve başlat butonu pasif olur; takipteyken pil düşerse takip otomatik duraklatılır ve bildirimle haber verilir
 - Markerlar Room'da saklanır, uygulama kapanıp açılınca aynı yerlerinde kalır
 - Markera dokununca başlık, adres (ters coğrafi kodlama) ve koordinatları gösteren bottom sheet açılır
 - Rotayı silmeden önce onay bottom sheet'i
 - Harita türü (normal / hybrid) DataStore'da saklanır
+
+### Pil optimizasyonu
+
+- **Konum isteği:** Yüksek doğrulukta, 2 saniye aralıkla ve en az **10 metre** hareket olduğunda güncelleme alınır. Kullanıcı durağanken gereksiz güncelleme gelmez. Marker aralığı 100 m olduğu için bu filtre markerları etkilemez. 10 m'de bıraktım: daha büyük bir değer (örn. 25-50 m) markerların 100 m'den daha fazla kaymasına ve kameranın daha seyrek güncellenmesine yol açar.
+- **Düşük pil koruması:** Pil %10'un altındaysa ve cihaz şarj olmuyorsa uyarı kartı görünür ve takip başlatılamaz (başlat butonu pasif). Takipteyken pil bu seviyenin altına düşerse takip otomatik duraklatılır ve bildirimle haber verilir. Şarj edilince ya da pil yükselince kart kaybolur ve takip elle yeniden başlatılabilir.
+- **Foreground service:** Takip yalnızca kullanıcı başlattığında çalışır; durdurulunca servis ve konum dinleme kapanır.
 
 ## Ekran görüntüleri
 
@@ -88,6 +95,7 @@ Gereksinimler: Android Studio (AGP 9 destekli sürüm), JDK 17, Maps SDK for And
 ```
 
 - `DistanceCalculatorTest`: mesafe hesabı (aynı nokta, bilinen mesafeler, simetri)
+- `BatteryLevelTest`: pil düşük kararı (eşik, şarj durumu, geçersiz değerler)
 - `RouteTrackerTest`: ilk konumun sadece referans olması, 100 m'den kısa/uzun adımlar, sonraki markerın son markerdan ölçülmesi, rota silme, takip başlat/durdur ve takibin hatırlanması
 
 UI ve servis için otomatik test yok; bu kısımlar aşağıdaki gibi elle test edilir.
@@ -110,11 +118,19 @@ Gerçekten yürümeden takibi tekrar edilebilir şekilde denemek için `docs/mar
 |---|---|
 | İzin yokken uygulamayı aç | Üstte "Konum izni verilmedi" kartı çıkar; karta dokununca sistem izin diyaloğu açılır |
 | İzin verilmiş, konum kapalı | "Konum kapalı" kartı çıkar; dokununca uygulama içi "konumu aç" diyaloğu açılır |
-| Play'e bas | Durum kartı yeşil "Tracking" olur, foreground service bildirimi görünür |
+| İzin verilmiş, konum açık, pil yeterli iken play'e bas | Durum kartı yeşil "Tracking" olur, foreground service bildirimi görünür |
 | Takipte haritayı kaydır | Kamera kullanıcıyı izlemeyi bırakır; konum butonuna basınca tekrar izler |
 | Markera dokun | Kamera markerı ortalar, ardından başlık, adres ve koordinatlar bottom sheet'te açılır |
 | Pause'a bas | Kart kırmızı "Not tracking" olur, bildirim kalkar |
 | Uygulamayı kapatıp aç | Markerlar aynı yerlerinde kalır |
 | Takipteyken uygulamayı arka plana al | Takip ve marker ekleme devam eder (bildirimden durdurulabilir) |
+| Pil %10'un altında ve şarjda değil | Üstte "Battery is low" kartı çıkar, başlat butonu pasif olur; takipteyken düşerse takip durur ve "Tracking paused" bildirimi gelir |
 | Çöp kutusuna bas → **Reset** | Onay bottom sheet'i açılır; onaylayınca tüm markerlar silinir |
 | Harita ikonuna bas | Harita türü normal ↔ hybrid arasında değişir ve uygulama yeniden açılınca korunur |
+
+## AI Assistance
+
+Bu projenin geliştirilmesinde yapay zekâ desteği olarak Claude Code kullanıldı. 
+
+- [`docs/ai/AI_USAGE.md`](docs/ai/AI_USAGE.md): AI'ın hangi alanlarda kullanıldığı, benim kararlarım ve doğrulama süreci
+- [`docs/ai/CLAUDE.md`](docs/ai/CLAUDE.md): AI'a verilen proje bağlamı (komutlar, mimari özeti)

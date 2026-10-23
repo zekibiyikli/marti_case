@@ -16,17 +16,13 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun LocationWarningCard(
     message: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
 ) {
-    Surface(
-        onClick = onClick,
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        color = Color(0xFFF1F2F4),
-        contentColor = Color(0xFF2B2E33),
-        shadowElevation = 8.dp
-    ) {
+    val shape = RoundedCornerShape(16.dp)
+    val color = Color(0xFFF1F2F4)
+    val contentColor = Color(0xFF2B2E33)
+    val content: @Composable () -> Unit = {
         Text(
             text = message,
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
@@ -34,6 +30,27 @@ fun LocationWarningCard(
             textAlign = TextAlign.Center,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
+        )
+    }
+    // Without an action the card is purely informational and not clickable.
+    if (onClick != null) {
+        Surface(
+            onClick = onClick,
+            modifier = modifier.fillMaxWidth(),
+            shape = shape,
+            color = color,
+            contentColor = contentColor,
+            shadowElevation = 8.dp,
+            content = content
+        )
+    } else {
+        Surface(
+            modifier = modifier.fillMaxWidth(),
+            shape = shape,
+            color = color,
+            contentColor = contentColor,
+            shadowElevation = 8.dp,
+            content = content
         )
     }
 }

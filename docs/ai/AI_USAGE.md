@@ -33,6 +33,7 @@ Bu case sürecinde yapay zekâdan destek alındı. Bu dosya neyin, nerede ve nas
 - **Marker kuralı:** Takip başlar başlamaz marker eklenmesin; marker, referans noktasından 100 m uzaklaşınca eklensin. Rota silinince ekrandaki tüm markerlar gitsin ve takip açıkken hemen yeni marker düşmesin.
 - **Marker detayı:** Markera tıklayınca başlık, adres ve konum gösteren bir bottom sheet açılsın.
 - **Silme onayı:** Silmeden önce Cancel / Reset butonlu, başlık ve açıklamalı, animasyonla kapanan bir bottom sheet.
+- **Pil yönetimi:** Pil %10'un altındayken (şarjda değilken) ekranda uyarı kartı görünsün ve başlat butonu pasif olsun; takipteyken pil düşerse takip otomatik duraklasın ve kullanıcıya bildirimle söylensin. Konum güncellemesi için de mesafe filtresi kullanılsın.
 - **Konum odağı:** Takip kapalıyken de harita açılışta kullanıcının konumuna ortalansın.
 
 ### Tasarım kararları

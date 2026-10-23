@@ -46,6 +46,7 @@ import com.google.maps.android.compose.MapType
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.zekibiyikli.marticase.presentation.map.dialogs.DeleteRouteBottomSheet
+import com.zekibiyikli.marticase.presentation.battery.rememberBatteryLow
 import com.zekibiyikli.marticase.presentation.map.components.LocationWarningCard
 import com.zekibiyikli.marticase.R
 import com.zekibiyikli.marticase.presentation.map.components.MapControls
@@ -77,6 +78,7 @@ fun MapScreen(
     val permissionGranted = permissionState.granted
     val locationEnabledState = rememberLocationEnabledState()
     val locationEnabled = locationEnabledState.enabled
+    val batteryLow = rememberBatteryLow()
     var showDeleteSheet by remember { mutableStateOf(false) }
     // The service runs with or without the notification, so start it whatever the user answers.
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -179,10 +181,9 @@ fun MapScreen(
         }
         MapControls(
             isTracking = isTracking,
+            canStartTracking = permissionGranted && locationEnabled && !batteryLow,
             onToggleTracking = {
                 when {
-                    !permissionGranted -> permissionState.request()
-                    !locationEnabled -> locationEnabledState.request()
                     isTracking -> LocationTrackingService.stop(context)
                     needsNotificationPermission(context) ->
                         notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
@@ -227,6 +228,9 @@ fun MapScreen(
                     message = stringResource(R.string.location_disabled),
                     onClick = locationEnabledState.request
                 )
+            }
+            if (batteryLow) {
+                LocationWarningCard(message = stringResource(R.string.battery_low_card))
             }
         }
     }
