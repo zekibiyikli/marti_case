@@ -63,12 +63,23 @@ Clean Architecture, tek modül (`:app`):
 
 ```
 com.zekibiyikli.marticase
-├── di/            Koin modülleri
-├── domain/        model, repository arayüzleri, use case'ler (Android bağımlılığı yok)
-├── data/          Room, DataStore, konum ve Geocoder kaynakları, repository implementasyonları
-├── presentation/  Compose ekranları, ViewModel, izin yardımcıları, tema
-├── service/       LocationTrackingService, RouteTracker
-└── util/
+├── di/                     Koin modülleri
+├── domain/                 Android bağımlılığı yok
+│   ├── model/              LocationPoint, MapStyle
+│   ├── repository/         Repository arayüzleri
+│   └── usecase/            Tek işlik use case'ler
+├── data/
+│   ├── local/              Room (dao, entity), DataStore
+│   ├── location/           Fused Location ve Geocoder kaynakları
+│   ├── mapper/             Entity <-> domain dönüşümleri
+│   └── repository/         Repository implementasyonları
+├── presentation/
+│   ├── map/                MapScreen, MapViewModel, UiState, components, dialogs
+│   ├── permission/         İzin ve konum durumu yardımcıları
+│   ├── battery/            Düşük pil durumu
+│   └── theme/              Renk, tipografi, tema
+├── service/                LocationTrackingService, RouteTracker
+└── util/                   Mesafe ve pil hesapları
 ```
 
 Takip akışı: `RouteTracker` (uygulama genelinde tek örnek) konum akışını dinler, 100 m kuralını uygular ve markerları Room'a yazar. `LocationTrackingService` onu foreground service olarak çalışır tutar. `MapViewModel` yalnızca `RouteTracker` ve Room'dan gelen durumu gözlemleyip ekranın tek bir `StateFlow`'unu oluşturur.
